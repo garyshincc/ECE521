@@ -1,7 +1,10 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
 
 '''
 Number of hidden units: Instead of using 1000 hidden units,
@@ -49,7 +52,7 @@ def get_layer(input_tensor, num_input, num_output):
 			shape=(num_input, num_output),
 			dtype=tf.float32,
 			initializer=weight_initializer,
-			#regularizer=tf.contrib.layers.l2_regularizer(0.1)
+			regularizer=tf.contrib.layers.l2_regularizer(3e-4)
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
@@ -66,8 +69,8 @@ image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 500
-batch_size = 1500
+training_steps = 1500
+batch_size = 500
 keep_prob_value = 0.5
 
 num_hidden_unit = 1000
@@ -104,14 +107,14 @@ classification_error = 1.0 - accuracy
 
 ''' cost definition '''
 lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-#lD_no_drop = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out_no_drop))
-W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
-W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
-print ("w1 shape: {}".format(W1.shape))
-print ("w2 shape: {}".format(W2.shape))
-lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
-lW *= weight_decay / 2
-cost = lD + lW
+# #lD_no_drop = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out_no_drop))
+# W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
+# W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
+# print ("w1 shape: {}".format(W1.shape))
+# print ("w2 shape: {}".format(W2.shape))
+# lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
+# lW *= weight_decay / 2
+cost = lD 
 report_cost = lD
 
 ''' checkpoint '''
@@ -170,7 +173,7 @@ for step in range(training_steps):
 		test_losses.append(test_loss)
 
 		print("Epoch: {}".format(epoch))
-		#print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
+		print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
 		#print(sess.run(h1, feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value}))
 		epoch += 1
 
@@ -205,6 +208,7 @@ plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("3_1_acc.png")
 
 fig = plt.figure()
+plt.ylim([0, 3])
 fig.patch.set_facecolor('white')
 plt.plot(steps, train_losses, "r-")
 plt.plot(steps, valid_losses, "c-")
@@ -219,6 +223,7 @@ plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("3_1_loss.png")
 
 fig = plt.figure()
+plt.ylim([0, 1])
 fig.patch.set_facecolor('white')
 plt.plot(steps, train_errors, "r-")
 plt.plot(steps, valid_errors, "c-")
@@ -232,6 +237,6 @@ blue_patch = mpatches.Patch(color='blue', label='Test Set')
 plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("3_1_error.png")
 
-plt.show()
+#plt.show()
 
 

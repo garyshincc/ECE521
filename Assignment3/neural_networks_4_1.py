@@ -1,7 +1,10 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import time
 
 '''
 Number of hidden units: Instead of using 1000 hidden units,
@@ -13,6 +16,7 @@ classification error. In one sentence, summarize your
 observation about the effect of the number of hidden units
 on the final results.
 '''
+
 # data
 def get_data():
 	with np.load("notMNIST.npz") as data:
@@ -42,14 +46,14 @@ def get_data():
 		return trainData, trainTarget, validData, validTarget, testData, testTarget
 
 # vectorized layer
-def get_layer(input_tensor, num_input, num_output):
+def get_layer(input_tensor, num_input, num_output, weight_decay=3e-4):
 	weight_initializer = tf.contrib.layers.xavier_initializer()
 	W = tf.get_variable(
 			name="weights",
 			shape=(num_input, num_output),
 			dtype=tf.float32,
 			initializer=weight_initializer,
-			#regularizer=tf.contrib.layers.l2_regularizer(0.1)
+			#regularizer=tf.contrib.layers.l2_regularizer(weight_decay)
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
@@ -60,17 +64,49 @@ trainData, trainTarget, validData, validTarget, testData, testTarget = get_data(
 
 num_samples = trainData.shape[0]
 
+
 ''' hyper parameters ''' 
-learning_rate = 0.005 # 0.01
+np.random.seed(int(287))
+
+'''
+sample the natural log of learning rate
+uniformly between -7.5 and -4.5
+'''
+lr_sample = np.random.uniform(low=-7.5, high=-4.5)
+learning_rate = np.log(lr_sample)
+
+'''
+the number of layers from 1 to 5
+'''
+num_hidden_layers = int(np.random.uniform(1, 6))
+
+'''
+the number of hidden units per layer between 100 and 500
+'''
+num_hidden_unit = int(np.random.uniform(100, 501))
+
+'''
+and the natural log of weight decay coefficient
+uniformly from the interval [−9, −6]
+'''
+wd_sample = np.random.uniform(low=-9, high=-6)
+weight_decay = np.log(wd_sample)
+
+'''
+Also, randomly choose your model to use dropout or not
+'''
+keep_prob_value = 0.5 if int(np.random.uniform(0,2)) == 1 else 1.0
+
+
 image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
-weight_decay = 3e-4
 training_steps = 1000
-batch_size = 1500
-keep_prob_value = 0.5
+batch_size = 500
 
-num_hidden_unit = 1000
+
+
+
 keep_prob = tf.placeholder(dtype=tf.float32, name="keep_prob")
 
 num_batches = int(num_samples / batch_size)
@@ -85,14 +121,23 @@ Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
 
 ''' build the model '''
 with tf.variable_scope("weights1" + str(num_hidden_unit)):
-	z1 = get_layer(X, image_dim, num_hidden_unit)
+	z1 = get_layer(X, image_dim, num_hidden_unit, weight_decay)
 	#print ("z1 shape: {}".format(z1.shape))
 	h1 = tf.nn.relu(z1)
 	h1_drop = tf.nn.dropout(h1, keep_prob)
 
 with tf.variable_scope("weights2" + str(num_hidden_unit)):
-	z_out = get_layer(h1_drop, num_hidden_unit, num_classifications)
+	z_out = get_layer(h1_drop, num_hidden_unit, num_classifications, weight_decay)
 	#print ("z_out shape: {}".format(z_out.shape))
+
+
+
+
+
+
+
+
+
 
 ''' output '''
 softmax = tf.nn.softmax(z_out)
@@ -173,42 +218,13 @@ for step in range(training_steps):
 		test_losses.append(test_loss)
 
 		print("Epoch: {}".format(epoch))
-		#print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
+		print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
 		#print(sess.run(h1, feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value}))
 		epoch += 1
-
-
-	if step == checkpoint1:
-		print ("25 % REACHED")
-		#saver.save(sess, './25%_checkpoint', global_step=step)
-		w_vis = sess.run(tf.reshape(W1[filter_num, :], weight_dim))
-		plt.figure()
-		plt.imshow(w_vis,cmap="gray")
-
-	if step == checkpoint2:
-		print ("50 % REACHED")
-		w_vis = sess.run(tf.reshape(W1[filter_num, :], weight_dim))
-		plt.figure()
-		plt.imshow(w_vis,cmap="gray")
-
-	if step == checkpoint3:
-		print ("75 % REACHED")
-		w_vis = sess.run(tf.reshape(W1[filter_num, :], weight_dim))
-		plt.figure()
-		plt.imshow(w_vis,cmap="gray")
-
-	if step == training_steps - 1:
-		print ("100 % REACHED")
-		w_vis = sess.run(tf.reshape(W1[filter_num, :], weight_dim))
-		plt.figure()
-		plt.imshow(w_vis,cmap="gray")
-		plt.show()
-
 
 # redefine accuracy for the no dropout case, 
 keep_prob_value = 1.0
 
-print ("Num hidden units: {}".format(num_hidden_unit))
 valid_acc, valid_loss, valid_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: validData, Y: validTarget, keep_prob: keep_prob_value})
 print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))
 

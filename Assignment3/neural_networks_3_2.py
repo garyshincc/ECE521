@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -67,10 +69,10 @@ bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
 training_steps = 1500
-batch_size = 1500
+batch_size = 500
 keep_prob_value = 0.5
 
-num_hidden_unit = 2000
+num_hidden_unit = 1000
 keep_prob = tf.placeholder(dtype=tf.float32, name="keep_prob")
 
 num_batches = int(num_samples / batch_size)
@@ -143,7 +145,7 @@ epoch = 0
 checkpoint1 = int(training_steps / 4.0)
 checkpoint2 = int(2 * training_steps / 4.0)
 checkpoint3 = int(3 * training_steps / 4.0)
-num_layers = 100
+num_neurons = 100
 weight_dim = (28, 28)
 
 for step in range(training_steps):
@@ -178,42 +180,31 @@ for step in range(training_steps):
 		#print(sess.run(h1, feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value}))
 		epoch += 1
 
-	'''
 	if step == checkpoint1:
 		print ("25 % REACHED")
-		#saver.save(sess, './25%_checkpoint', global_step=step)
-		for layer_num in range(num_layers):
+		fig, axs = plt.subplots(10,10, figsize=(28, 28), facecolor='w', edgecolor='k')
+		fig.subplots_adjust(hspace = .5, wspace=.001)
+		axs = axs.ravel()
+		for layer_num in range(num_neurons):
+			print("rendering neuron: {}".format(layer_num))
 			w_vis = sess.run(tf.reshape(W1[:, layer_num], weight_dim))
-			plt.figure()
-			plt.imshow(w_vis,cmap="gray")
+			axs[layer_num].imshow(w_vis, cmap="gray")
 
-	if step == checkpoint2:
-		print ("50 % REACHED")
-		for layer_num in range(num_layers):
-			w_vis = sess.run(tf.reshape(W1[:, layer_num], weight_dim))
-			plt.figure()
-			plt.imshow(w_vis,cmap="gray")
+		plt.tight_layout()
+		plt.savefig("3_2_25.png")
 
-	if step == checkpoint3:
-		print ("75 % REACHED")
-		for layer_num in range(num_layers):
-			w_vis = sess.run(tf.reshape(W1[:, layer_num], weight_dim))
-			plt.figure()
-			plt.imshow(w_vis,cmap="gray")
-	'''
 	if step == training_steps - 1:
 		print ("100 % REACHED")
 		fig, axs = plt.subplots(10,10, figsize=(28, 28), facecolor='w', edgecolor='k')
 		fig.subplots_adjust(hspace = .5, wspace=.001)
 		axs = axs.ravel()
-		for layer_num in range(num_layers):
-			print("rendering layer: {}".format(layer_num))
+		for layer_num in range(num_neurons):
+			print("rendering neuron: {}".format(layer_num))
 			w_vis = sess.run(tf.reshape(W1[:, layer_num], weight_dim))
-
 			axs[layer_num].imshow(w_vis, cmap="gray")
 
 		plt.tight_layout()
-		plt.show()
+		plt.savefig("3_2_100.png")
 
 
 # redefine accuracy for the no dropout case, 

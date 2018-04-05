@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -33,18 +35,18 @@ def get_data():
 		return trainData, trainTarget, validData, validTarget, testData, testTarget
 
 # vectorized layer
-def get_layer(input_tensor, num_input, num_output):
+def get_layer(input_tensor, num_input, num_output, wd_value=3e-4):
 	weight_initializer = tf.contrib.layers.xavier_initializer()
 	W = tf.get_variable(
 			name="weights",
 			shape=(num_input, num_output),
 			dtype=tf.float32,
 			initializer=weight_initializer,
-			#regularizer=tf.contrib.layers.l2_regularizer(0.1)
+			#regularizer=tf.contrib.layers.l2_regularizer(scale=wd_value)
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
-	return z
+	return z, W
 
 def gary_round(num, num2):
 	return int(num * num2) / float(num2)
@@ -61,7 +63,7 @@ image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 3000
+training_steps = 4500
 batch_size = 500
 
 
@@ -76,30 +78,27 @@ Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
 
 ''' build the model '''
 with tf.variable_scope("weights1"):
-	z1 = get_layer(X, image_dim, num_hidden_units)
+	z1, W1 = get_layer(X, image_dim, num_hidden_units)
 	#print ("z1 shape: {}".format(z1.shape))
 	h1 = tf.nn.relu(z1)
 
 with tf.variable_scope("weights2"):
-	z_out = get_layer(h1, num_hidden_units, num_classifications)
+	z_out, W2 = get_layer(h1, num_hidden_units, num_classifications)
 	#print ("z_out shape: {}".format(z_out.shape))
 
 ''' output '''
 softmax = tf.nn.softmax(z_out)
-prediction = tf.cast(tf.argmax(softmax, 1), tf.float64)
+prediction = tf.cast(tf.argmax(softmax, -1), tf.float64)
 
-correct = tf.reduce_sum(tf.cast(tf.equal(prediction, tf.cast(tf.argmax(tf.cast(Y, tf.float64), 1), tf.float64)), tf.float64))
+correct = tf.reduce_sum(tf.cast(tf.equal(prediction, tf.cast(tf.argmax(tf.cast(Y, tf.float64), -1), tf.float64)), tf.float64))
 accuracy = tf.cast(correct, tf.float64) / tf.cast(tf.shape(prediction)[0], tf.float64)
 classification_error = 1.0 - accuracy
 
 ''' cost definition '''
-lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-W1 = tf.get_default_graph().get_tensor_by_name("weights1/weights:0")
-W2 = tf.get_default_graph().get_tensor_by_name("weights2/weights:0")
-print ("w1 shape: {}".format(W1.shape))
-print ("w2 shape: {}".format(W2.shape))
-lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
-lW *= weight_decay / 2
+lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=z_out))
+#W1 = tf.get_default_graph().get_tensor_by_name("weights1/weights:0")
+#W2 = tf.get_default_graph().get_tensor_by_name("weights2/weights:0")
+lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2)) * weight_decay / 2
 cost = lD + lW
 cost_report = lD
 
@@ -141,7 +140,6 @@ for step in range(training_steps):
 	dataBatchi = trainData[batch_num: batch_num + batch_size]
 	targetBatchi = trainTarget[batch_num: batch_num + batch_size]
 
-
 	''' run training '''
 	sess.run(train, feed_dict = {X: dataBatchi, Y: targetBatchi})
 
@@ -162,8 +160,9 @@ for step in range(training_steps):
 		valid_losses.append(valid_loss)
 		test_losses.append(test_loss)
 
-		print("Epoch: {}".format(epoch))
+		#print("Epoch: {}".format(epoch))
 		print("Training loss: {}, accuracy: {}".format(gary_round(train_loss,1000), gary_round(train_acc,1000)))
+		#print (sess.run(W1))
 		epoch += 1
 
 train_acc, train_loss = sess.run([accuracy, cost_report], feed_dict = {X: trainData, Y: trainTarget})
@@ -190,6 +189,7 @@ plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("1_2_acc.png")
 
 fig = plt.figure()
+plt.ylim([0, 3])
 fig.patch.set_facecolor('white')
 plt.plot(steps, train_losses, "r-")
 plt.plot(steps, valid_losses, "c-")
@@ -204,6 +204,7 @@ plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("1_2_loss.png")
 
 fig = plt.figure()
+plt.ylim([0, 1])
 fig.patch.set_facecolor('white')
 plt.plot(steps, train_errors, "r-")
 plt.plot(steps, valid_errors, "c-")
@@ -217,31 +218,7 @@ blue_patch = mpatches.Patch(color='blue', label='Test Set')
 plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("1_2_error.png")
 
-plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#plt.show()
 
 
 

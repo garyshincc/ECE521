@@ -1,7 +1,10 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
 
 '''
 Number of hidden units: Instead of using 1000 hidden units,
@@ -49,7 +52,7 @@ def get_layer(input_tensor, num_input, num_output):
 			shape=(num_input, num_output),
 			dtype=tf.float32,
 			initializer=weight_initializer,
-			#regularizer=tf.contrib.layers.l2_regularizer(0.1)
+			regularizer=tf.contrib.layers.l2_regularizer(3e-4)
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
@@ -66,11 +69,11 @@ image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 200
-batch_size = 1500
+training_steps = 1500
+batch_size = 500
 
 num_hidden_units = [100, 500, 1000] # 1000
-num_hidden_unit = 1000
+num_hidden_unit = 100
 # Hidden units: 100, Valid loss: 0.2912, acc: 0.916, error: 0.084
 # Hidden units: 500, Valid loss: 0.2698, acc: 0.918, error: 0.082
 # Hidden units: 1000, Valid loss: 0.2605 acc: 0.924, error: 0.076 <- best found!
@@ -84,6 +87,8 @@ print("num_epochs: {}".format(num_epochs))
 ''' start defining variables '''
 X = tf.placeholder(tf.float32, shape=(None, image_dim), name="input")
 Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
+
+
 
 for num_hidden_unit in num_hidden_units:
 
@@ -107,17 +112,29 @@ for num_hidden_unit in num_hidden_units:
 
 	''' cost definition '''
 	lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-	W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
-	W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
-	print ("w1 shape: {}".format(W1.shape))
-	print ("w2 shape: {}".format(W2.shape))
-	lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
-	lW *= weight_decay / 2
-	cost = lD + lW
+	# W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
+	# W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
+	# print ("w1 shape: {}".format(W1.shape))
+	# print ("w2 shape: {}".format(W2.shape))
+	# lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
+	# lW *= weight_decay / 2
+	cost = lD
 	report_cost = lD
 
 	''' checkpoint '''
 	weight_saver = tf.train.Saver()
+
+
+
+	print("num hidden unit: {}".format(num_hidden_unit))
+	''' optimizer '''
+	optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+	train = optimizer.minimize(cost)
+
+	''' tensorflow session '''
+	init = tf.global_variables_initializer()
+	sess = tf.Session()
+	sess.run(init)
 
 	''' plot array definition '''
 	train_accs = list()
@@ -131,16 +148,6 @@ for num_hidden_unit in num_hidden_units:
 	train_losses = list()
 	valid_losses = list()
 	test_losses = list()
-
-	print("num hidden unit: {}".format(num_hidden_unit))
-	''' optimizer '''
-	optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-	train = optimizer.minimize(cost)
-
-	''' tensorflow session '''
-	init = tf.global_variables_initializer()
-	sess = tf.Session()
-	sess.run(init)
 
 	epoch = 0
 	for step in range(training_steps):
@@ -180,40 +187,55 @@ for num_hidden_unit in num_hidden_units:
 	print ("Test loss: {}, acc: {}, error: {}".format(test_loss, test_acc, test_error))
 
 
-''' plot '''
-
-'''
-steps = np.linspace(0, num_epochs, num=num_epochs)
-fig = plt.figure()
-fig.patch.set_facecolor('white')
-plt.plot(steps, train_accs, "r-")
-plt.plot(steps, valid_accs, "c-")
-plt.plot(steps, test_accs, "b-")
-
-plt.xlabel("Epochs")
-plt.ylabel("Cross Entropy Loss")
-red_patch = mpatches.Patch(color='red', label='Training Set')
-cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
-blue_patch = mpatches.Patch(color='blue', label='Test Set')
-plt.legend(handles=[red_patch, cyan_patch, blue_patch])
-
-fig = plt.figure()
-fig.patch.set_facecolor('white')
-plt.plot(steps, train_losses, "r-")
-plt.plot(steps, valid_losses, "c-")
-plt.plot(steps, test_losses, "b-")
-
-plt.xlabel("Epochs")
-plt.ylabel("Cross Entropy Loss")
-red_patch = mpatches.Patch(color='red', label='Training Set')
-cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
-blue_patch = mpatches.Patch(color='blue', label='Test Set')
-plt.legend(handles=[red_patch, cyan_patch, blue_patch])
+	''' plot '''
 
 
+	steps = np.linspace(0, len(train_accs), num=len(train_accs))
+	fig = plt.figure()
+	fig.patch.set_facecolor('white')
+	plt.plot(steps, train_accs, "r-")
+	plt.plot(steps, valid_accs, "c-")
+	plt.plot(steps, test_accs, "b-")
 
-plt.show()
-'''
+	plt.xlabel("Epochs")
+	plt.ylabel("Accuracy")
+	red_patch = mpatches.Patch(color='red', label='Training Set')
+	cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
+	blue_patch = mpatches.Patch(color='blue', label='Test Set')
+	plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
+	plt.savefig("2_1_" + str(num_hidden_unit) + "_acc.png")
+
+	fig = plt.figure()
+	plt.ylim([0, 3])
+	fig.patch.set_facecolor('white')
+	plt.plot(steps, train_losses, "r-")
+	plt.plot(steps, valid_losses, "c-")
+	plt.plot(steps, test_losses, "b-")
+
+	plt.xlabel("Epochs")
+	plt.ylabel("Cross Entropy Loss")
+	red_patch = mpatches.Patch(color='red', label='Training Set')
+	cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
+	blue_patch = mpatches.Patch(color='blue', label='Test Set')
+	plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
+	plt.savefig("2_1_" + str(num_hidden_unit) + "_loss.png")
+
+	fig = plt.figure()
+	plt.ylim([0, 1])
+	fig.patch.set_facecolor('white')
+	plt.plot(steps, train_errors, "r-")
+	plt.plot(steps, valid_errors, "c-")
+	plt.plot(steps, test_errors, "b-")
+
+	plt.xlabel("Epochs")
+	plt.ylabel("Classification Error")
+	red_patch = mpatches.Patch(color='red', label='Training Set')
+	cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
+	blue_patch = mpatches.Patch(color='blue', label='Test Set')
+	plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
+	plt.savefig("2_1_" + str(num_hidden_unit) + "_error.png")
+
+
 
 
 

@@ -1,7 +1,11 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
+
 
 '''
 Number of hidden units: Instead of using 1000 hidden units,
@@ -49,7 +53,7 @@ def get_layer(input_tensor, num_input, num_output):
 			shape=(num_input, num_output),
 			dtype=tf.float32,
 			initializer=weight_initializer,
-			#regularizer=tf.contrib.layers.l2_regularizer(0.1)
+			regularizer=tf.contrib.layers.l2_regularizer(3e-4)
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
@@ -67,9 +71,8 @@ bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
 training_steps = 1500
-batch_size = 1500
+batch_size = 500
 
-num_hidden_units = [100, 500, 1000] # 1000
 num_hidden_unit = 500
 
 num_batches = int(num_samples / batch_size)
@@ -107,15 +110,15 @@ classification_error = 1.0 - accuracy
 
 ''' cost definition '''
 lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
-W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
-W3 = tf.get_default_graph().get_tensor_by_name("weights3" + str(num_hidden_unit) + "/weights:0")
-print ("w1 shape: {}".format(W1.shape))
-print ("w2 shape: {}".format(W2.shape))
-print ("w3 shape: {}".format(W3.shape))
-lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(W3))
-lW *= weight_decay / 2
-cost = lD + lW
+# W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
+# W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
+# W3 = tf.get_default_graph().get_tensor_by_name("weights3" + str(num_hidden_unit) + "/weights:0")
+# print ("w1 shape: {}".format(W1.shape))
+# print ("w2 shape: {}".format(W2.shape))
+# print ("w3 shape: {}".format(W3.shape))
+# lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(W3))
+# lW *= weight_decay / 2
+cost = lD
 report_cost = lD
 
 ''' checkpoint '''
