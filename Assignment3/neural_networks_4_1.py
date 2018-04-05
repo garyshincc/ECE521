@@ -148,7 +148,7 @@ accuracy = tf.cast(correct, tf.float64) / tf.cast(tf.shape(prediction)[0], tf.fl
 classification_error = 1.0 - accuracy
 
 ''' cost definition '''
-lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
+lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=z_out))
 #lD_no_drop = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out_no_drop))
 W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
 W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
