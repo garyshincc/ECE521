@@ -172,7 +172,7 @@ for step in range(training_steps):
 		axs = axs.ravel()
 		for layer_num in range(num_neurons):
 			print("rendering neuron: {}".format(layer_num))
-			w_vis = sess.run(tf.reshape(W1[:, layer_num], weight_dim))
+			w_vis = sess.run(tf.reshape(z1[:, layer_num], weight_dim))
 			axs[layer_num].imshow(w_vis, cmap="gray")
 
 		plt.tight_layout()
@@ -185,7 +185,7 @@ for step in range(training_steps):
 		axs = axs.ravel()
 		for layer_num in range(num_neurons):
 			print("rendering neuron: {}".format(layer_num))
-			w_vis = sess.run(tf.reshape(W1[:, layer_num], weight_dim))
+			w_vis = sess.run(tf.reshape(z1[:, layer_num], weight_dim))
 			axs[layer_num].imshow(w_vis, cmap="gray")
 
 		plt.tight_layout()
