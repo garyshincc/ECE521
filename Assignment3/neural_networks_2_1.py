@@ -68,7 +68,6 @@ num_samples = trainData.shape[0]
 ''' hyper parameters ''' 
 learning_rate = 0.005 # 0.01
 image_dim = 28 * 28 # 784
-bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
 training_steps = 3000
@@ -95,7 +94,7 @@ for num_hidden_unit in num_hidden_units:
 
 	''' build the model '''
 	with tf.variable_scope("weights1" + str(num_hidden_unit)):
-		z1, W1= get_layer(X, image_dim, num_hidden_unit)
+		z1, W1 = get_layer(X, image_dim, num_hidden_unit)
 		#print ("z1 shape: {}".format(z1.shape))
 		h1 = tf.nn.relu(z1)
 
@@ -105,9 +104,9 @@ for num_hidden_unit in num_hidden_units:
 
 	''' output '''
 	softmax = tf.nn.softmax(z_out)
-	prediction = tf.cast(tf.argmax(softmax, 1), tf.float64)
+	prediction = tf.cast(tf.argmax(softmax, -1), tf.float64)
 
-	correct = tf.reduce_sum(tf.cast(tf.equal(prediction, tf.cast(tf.argmax(tf.cast(Y, tf.float64), 1), tf.float64)), tf.float64))
+	correct = tf.reduce_sum(tf.cast(tf.equal(prediction, tf.cast(tf.argmax(tf.cast(Y, tf.float64), -1), tf.float64)), tf.float64))
 	accuracy = tf.cast(correct, tf.float64) / tf.cast(tf.shape(prediction)[0], tf.float64)
 	classification_error = 1.0 - accuracy
 

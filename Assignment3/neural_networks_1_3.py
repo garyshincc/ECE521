@@ -175,16 +175,16 @@ for step in range(training_steps):
 		print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 		epoch += 1
 
-train_acc, train_loss = sess.run([accuracy, cost_report], feed_dict = {X: trainData, Y: trainTarget})
-print ("Train loss: {}, acc: {}".format(train_loss, train_acc))
+train_acc, train_loss, train_error = sess.run([accuracy, cost_report, classification_error], feed_dict = {X: trainData, Y: trainTarget})
+print ("Train loss: {}, acc: {}, error: {}".format(train_loss, train_acc, train_error))
 
 
-valid_acc, valid_loss = sess.run([accuracy, cost_report], feed_dict = {X: validData, Y: validTarget})
-print ("Valid loss: {}, acc: {}".format(valid_loss, valid_acc))
+valid_acc, valid_loss, valid_error = sess.run([accuracy, cost_report, classification_error], feed_dict = {X: validData, Y: validTarget})
+print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))
 
 
-test_acc, test_loss = sess.run([accuracy, cost_report], feed_dict = {X: testData, Y: testTarget})
-print ("Test loss: {}, acc: {}".format(test_loss, test_acc))
+test_acc, test_loss, test_error = sess.run([accuracy, cost_report, classification_error], feed_dict = {X: testData, Y: testTarget})
+print ("Test loss: {}, acc: {}, error: {}".format(test_loss, test_acc, test_error))
 
 
 

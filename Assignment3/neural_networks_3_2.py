@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -60,7 +60,7 @@ learning_rate = 0.005 # 0.01
 image_dim = 28 * 28 # 784
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 1500
+training_steps = 500
 batch_size = 500
 keep_prob_value = 0.5
 
@@ -79,15 +79,14 @@ Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
 
 ''' build the model '''
 with tf.variable_scope("weights1" + str(num_hidden_unit)):
-	h1_drop = tf.nn.dropout(X, keep_prob)
-	z1, W1 = get_layer(h1_drop, image_dim, num_hidden_unit)
-	#print ("z1 shape: {}".format(z1.shape))
-
-	h1 = tf.nn.relu(z1)
 	
+	z1, W1 = get_layer(X, image_dim, num_hidden_unit)
+	#print ("z1 shape: {}".format(z1.shape))
+	h1 = tf.nn.relu(z1)
+	h1_drop = tf.nn.dropout(h1, keep_prob)
 
 with tf.variable_scope("weights2" + str(num_hidden_unit)):
-	z_out, W2 = get_layer(h1, num_hidden_unit, num_classifications)
+	z_out, W2 = get_layer(h1_drop, num_hidden_unit, num_classifications)
 	#print ("z_out shape: {}".format(z_out.shape))
 
 ''' output '''
