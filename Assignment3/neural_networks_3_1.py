@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -72,7 +72,7 @@ image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 6000
+training_steps = 1500
 batch_size = 500
 keep_prob_value = 0.5
 
@@ -116,7 +116,7 @@ lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf
 # print ("w1 shape: {}".format(W1.shape))
 # print ("w2 shape: {}".format(W2.shape))
 lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2)) * weight_decay / 2
-cost = lD + lW
+cost = lD# + lW
 report_cost = lD
 
 ''' checkpoint '''
@@ -137,7 +137,7 @@ test_losses = list()
 
 print("num hidden unit: {}".format(num_hidden_unit))
 ''' optimizer '''
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+optimizer = tf.train.AdamOptimizer()
 train = optimizer.minimize(cost)
 
 ''' tensorflow session '''
@@ -153,11 +153,10 @@ for step in range(training_steps):
 	targetBatchi = trainTarget[batch_num: batch_num + batch_size]
 
 	''' run training '''
-	keep_prob_value = 0.5
+	keep_prob_value = 1.0
 	sess.run(train, feed_dict = {X: dataBatchi, Y: targetBatchi, keep_prob: keep_prob_value})
 
 	if batch_num == 0:
-		keep_prob_value = 1.0
 		train_acc, train_loss, train_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value})
 		valid_acc, valid_loss, valid_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: validData, Y: validTarget, keep_prob: keep_prob_value})
 		test_acc, test_loss, test_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: testData, Y: testTarget, keep_prob: keep_prob_value})
@@ -240,6 +239,6 @@ blue_patch = mpatches.Patch(color='blue', label='Test Set')
 plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("3_1_error.png")
 
-plt.show()
+#plt.show()
 
 

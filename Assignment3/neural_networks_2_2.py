@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -105,22 +105,16 @@ with tf.variable_scope("weights3" + str(num_hidden_unit)):
 
 ''' output '''
 softmax = tf.nn.softmax(z_out)
-prediction = tf.cast(tf.argmax(softmax, 1), tf.float64)
+prediction = tf.cast(tf.argmax(softmax, -1), tf.float64)
 
-correct = tf.reduce_sum(tf.cast(tf.equal(prediction, tf.cast(tf.argmax(tf.cast(Y, tf.float64), 1), tf.float64)), tf.float64))
+correct = tf.reduce_sum(tf.cast(tf.equal(prediction, tf.cast(tf.argmax(tf.cast(Y, tf.float64), -1), tf.float64)), tf.float64))
 accuracy = tf.cast(correct, tf.float64) / tf.cast(tf.shape(prediction)[0], tf.float64)
 classification_error = 1.0 - accuracy
 
 ''' cost definition '''
 lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-# W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
-# W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
-# W3 = tf.get_default_graph().get_tensor_by_name("weights3" + str(num_hidden_unit) + "/weights:0")
-# print ("w1 shape: {}".format(W1.shape))
-# print ("w2 shape: {}".format(W2.shape))
-# print ("w3 shape: {}".format(W3.shape))
 lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2) + tf.reduce_sum(W3 * W3)) * weight_decay / 2
-cost = lD + lW
+cost = lD #+ lW
 report_cost = lD
 
 ''' checkpoint '''
@@ -140,7 +134,7 @@ valid_losses = list()
 test_losses = list()
 
 ''' optimizer '''
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+optimizer = tf.train.AdamOptimizer()
 train = optimizer.minimize(cost)
 
 ''' tensorflow session '''
@@ -236,7 +230,7 @@ plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("2_2_error.png")
 
 
-plt.show()
+#plt.show()
 
 
 

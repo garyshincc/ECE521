@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -69,7 +69,7 @@ num_samples = trainData.shape[0]
 learning_rate = 0.005 # 0.01
 image_dim = 28 * 28 # 784
 num_classifications = 10
-weight_decay = 3e-4
+weight_decay = 0 # 3e-4
 training_steps = 3000
 batch_size = 500
 
@@ -123,7 +123,7 @@ for num_hidden_unit in num_hidden_units:
 
 	print("num hidden unit: {}".format(num_hidden_unit))
 	''' optimizer '''
-	optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+	optimizer = tf.train.AdamOptimizer()
 	train = optimizer.minimize(cost)
 
 	''' tensorflow session '''
@@ -144,6 +144,7 @@ for num_hidden_unit in num_hidden_units:
 	valid_losses = list()
 	test_losses = list()
 
+	lowest_valid_error = 10e10
 	epoch = 0
 	for step in range(training_steps):
 		batch_num = (step % num_batches) * batch_size
@@ -154,26 +155,28 @@ for num_hidden_unit in num_hidden_units:
 		sess.run(train, feed_dict = {X: dataBatchi, Y: targetBatchi})
 
 		if batch_num == 0:
-			train_acc, train_loss, train_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: trainData, Y: trainTarget})
+			#train_acc, train_loss, train_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: trainData, Y: trainTarget})
 			valid_acc, valid_loss, valid_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: validData, Y: validTarget})
-			test_acc, test_loss, test_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: testData, Y: testTarget})
+			#test_acc, test_loss, test_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: testData, Y: testTarget})
 
-			train_accs.append(train_acc)
-			valid_accs.append(valid_acc)
-			test_accs.append(test_acc)
+			# train_accs.append(train_acc)
+			# valid_accs.append(valid_acc)
+			# test_accs.append(test_acc)
 
-			train_errors.append(train_error)
-			valid_errors.append(valid_error)
-			test_errors.append(test_error)
+			# train_errors.append(train_error)
+			# valid_errors.append(valid_error)
+			# test_errors.append(test_error)
+			lowest_valid_error = min (lowest_valid_error, valid_error)
 
-			train_losses.append(train_loss)
-			valid_losses.append(valid_loss)
-			test_losses.append(test_loss)
+			# train_losses.append(train_loss)
+			# valid_losses.append(valid_loss)
+			# test_losses.append(test_loss)
 
-			print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
+			# print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 			epoch += 1
 
 	print ("Num hidden units: {}".format(num_hidden_unit))
+	print ("lowest_valid_error: {}".format(lowest_valid_error))
 	valid_acc, valid_loss, valid_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: validData, Y: validTarget})
 	print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))
 
@@ -230,7 +233,7 @@ for num_hidden_unit in num_hidden_units:
 	plt.savefig("2_1_" + str(num_hidden_unit) + "_error.png")
 
 
-	plt.show()
+	#plt.show()
 
 
 
