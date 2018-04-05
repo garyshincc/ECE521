@@ -59,6 +59,9 @@ def get_layer(input_tensor, num_input, num_output, weight_decay=3e-4):
 	z = tf.add(tf.matmul(input_tensor, W), b)
 	return z
 
+def gary_round(num, num2):
+	return int(num * num2) / float(num2)
+
 
 trainData, trainTarget, validData, validTarget, testData, testTarget = get_data()
 
@@ -66,42 +69,27 @@ num_samples = trainData.shape[0]
 
 
 ''' hyper parameters ''' 
-np.random.seed(int(287))
+np.random.seed(int(time.time()))
 
-'''
-sample the natural log of learning rate
-uniformly between -7.5 and -4.5
-'''
+
 lr_sample = np.random.uniform(low=-7.5, high=-4.5)
-learning_rate = np.log(lr_sample)
+learning_rate = np.exp(lr_sample)
 
-'''
-the number of layers from 1 to 5
-'''
 num_hidden_layers = int(np.random.uniform(1, 6))
 
-'''
-the number of hidden units per layer between 100 and 500
-'''
 num_hidden_unit = int(np.random.uniform(100, 501))
 
-'''
-and the natural log of weight decay coefficient
-uniformly from the interval [−9, −6]
-'''
-wd_sample = np.random.uniform(low=-9, high=-6)
-weight_decay = np.log(wd_sample)
 
-'''
-Also, randomly choose your model to use dropout or not
-'''
+wd_sample = np.random.uniform(low=-9, high=-6)
+weight_decay = np.exp(wd_sample)
+
 keep_prob_value = 0.5 if int(np.random.uniform(0,2)) == 1 else 1.0
 
 
 image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
-training_steps = 1000
+training_steps = 3000
 batch_size = 500
 
 
@@ -196,8 +184,8 @@ for step in range(training_steps):
 	targetBatchi = trainTarget[batch_num: batch_num + batch_size]
 
 	''' run training '''
-	keep_prob_value = 1.0
-	sess.run(train, feed_dict = {X: dataBatchi, Y: targetBatchi, keep_prob: keep_prob_value})
+	keep_prob_train = keep_prob_value
+	sess.run(train, feed_dict = {X: dataBatchi, Y: targetBatchi, keep_prob: keep_prob_train})
 
 	if batch_num == 0:
 		keep_prob_value = 1.0
@@ -217,13 +205,34 @@ for step in range(training_steps):
 		valid_losses.append(valid_loss)
 		test_losses.append(test_loss)
 
-		print("Epoch: {}".format(epoch))
-		print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
+		print("Epoch: {}, train loss: {}, acc: {}".format(epoch, gary_round(train_loss, 1000), gary_round(train_acc,1000)))
 		#print(sess.run(h1, feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value}))
 		epoch += 1
 
 # redefine accuracy for the no dropout case, 
 keep_prob_value = 1.0
+
+
+
+learning_rate
+
+num_hidden_layers
+
+num_hidden_unit
+
+weight_decay
+
+keep_prob_value
+
+training_steps = 3000
+batch_size = 500
+
+print ("learning rate: {}, weight_decay: {}, num_hidden_units: {}, keep_prob: {}".format(
+	learning_rate,
+	weight_decay,
+	num_hidden_unit,
+	keep_prob_value
+	))
 
 valid_acc, valid_loss, valid_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: validData, Y: validTarget, keep_prob: keep_prob_value})
 print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))

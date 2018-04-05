@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -57,7 +57,10 @@ def get_layer(input_tensor, num_input, num_output):
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
-	return z
+	return z, W
+
+def gary_round(num, num2):
+	return int(num * num2) / float(num2)
 
 
 trainData, trainTarget, validData, validTarget, testData, testTarget = get_data()
@@ -70,7 +73,7 @@ image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 1500
+training_steps = 3000
 batch_size = 500
 
 num_hidden_unit = 500
@@ -87,17 +90,17 @@ Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
 
 ''' build the model '''
 with tf.variable_scope("weights1" + str(num_hidden_unit)):
-	z1 = get_layer(X, image_dim, num_hidden_unit)
+	z1, W1 = get_layer(X, image_dim, num_hidden_unit)
 	#print ("z1 shape: {}".format(z1.shape))
 	h1 = tf.nn.relu(z1)
 
 with tf.variable_scope("weights2" + str(num_hidden_unit)):
-	z2 = get_layer(h1, num_hidden_unit, num_hidden_unit)
+	z2, W2 = get_layer(h1, num_hidden_unit, num_hidden_unit)
 	#print ("z1 shape: {}".format(z1.shape))
 	h2 = tf.nn.relu(z2)
 
 with tf.variable_scope("weights3" + str(num_hidden_unit)):
-	z_out = get_layer(h2, num_hidden_unit, num_classifications)
+	z_out, W3 = get_layer(h2, num_hidden_unit, num_classifications)
 	#print ("z_out shape: {}".format(z_out.shape))
 
 ''' output '''
@@ -116,9 +119,8 @@ lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf
 # print ("w1 shape: {}".format(W1.shape))
 # print ("w2 shape: {}".format(W2.shape))
 # print ("w3 shape: {}".format(W3.shape))
-# lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2)) + tf.reduce_sum(tf.square(W3))
-# lW *= weight_decay / 2
-cost = lD
+lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2) + tf.reduce_sum(W3 * W3)) * weight_decay / 2
+cost = lD + lW
 report_cost = lD
 
 ''' checkpoint '''
@@ -137,7 +139,6 @@ train_losses = list()
 valid_losses = list()
 test_losses = list()
 
-print("num hidden unit: {}".format(num_hidden_unit))
 ''' optimizer '''
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 train = optimizer.minimize(cost)
@@ -173,16 +174,69 @@ for step in range(training_steps):
 		valid_losses.append(valid_loss)
 		test_losses.append(test_loss)
 
-		print("Epoch: {}".format(epoch))
-		print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
+		print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 		epoch += 1
 
-print ("Num hidden units: {}".format(num_hidden_unit))
+train_acc, train_loss, train_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: trainData, Y: trainTarget})
+print ("Train loss: {}, acc: {}, error: {}".format(train_loss, train_acc, train_error))
+
 valid_acc, valid_loss, valid_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: validData, Y: validTarget})
 print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))
 
 test_acc, test_loss, test_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: testData, Y: testTarget})
 print ("Test loss: {}, acc: {}, error: {}".format(test_loss, test_acc, test_error))
+
+
+''' plot '''
+
+
+steps = np.linspace(0, len(train_accs), num=len(train_accs))
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+plt.plot(steps, train_accs, "r-")
+plt.plot(steps, valid_accs, "c-")
+plt.plot(steps, test_accs, "b-")
+
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+red_patch = mpatches.Patch(color='red', label='Training Set')
+cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
+blue_patch = mpatches.Patch(color='blue', label='Test Set')
+plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
+plt.savefig("2_2_acc.png")
+
+fig = plt.figure()
+plt.ylim([0, 3])
+fig.patch.set_facecolor('white')
+plt.plot(steps, train_losses, "r-")
+plt.plot(steps, valid_losses, "c-")
+plt.plot(steps, test_losses, "b-")
+
+plt.xlabel("Epochs")
+plt.ylabel("Cross Entropy Loss")
+red_patch = mpatches.Patch(color='red', label='Training Set')
+cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
+blue_patch = mpatches.Patch(color='blue', label='Test Set')
+plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
+plt.savefig("2_2_loss.png")
+
+fig = plt.figure()
+plt.ylim([0, 1])
+fig.patch.set_facecolor('white')
+plt.plot(steps, train_errors, "r-")
+plt.plot(steps, valid_errors, "c-")
+plt.plot(steps, test_errors, "b-")
+
+plt.xlabel("Epochs")
+plt.ylabel("Classification Error")
+red_patch = mpatches.Patch(color='red', label='Training Set')
+cyan_patch = mpatches.Patch(color='cyan', label='Validation Set')
+blue_patch = mpatches.Patch(color='blue', label='Test Set')
+plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
+plt.savefig("2_2_error.png")
+
+
+plt.show()
 
 
 

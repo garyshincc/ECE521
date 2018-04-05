@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -52,12 +52,14 @@ def get_layer(input_tensor, num_input, num_output):
 			shape=(num_input, num_output),
 			dtype=tf.float32,
 			initializer=weight_initializer,
-			regularizer=tf.contrib.layers.l2_regularizer(3e-4)
+			#regularizer=tf.contrib.layers.l2_regularizer(3e-4)
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
-	return z
+	return z, W
 
+def gary_round(num, num2):
+	return int(num * num2) / float(num2)
 
 trainData, trainTarget, validData, validTarget, testData, testTarget = get_data()
 
@@ -69,11 +71,10 @@ image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 1500
+training_steps = 3000
 batch_size = 500
 
 num_hidden_units = [100, 500, 1000] # 1000
-num_hidden_unit = 100
 # Hidden units: 100, Valid loss: 0.2912, acc: 0.916, error: 0.084
 # Hidden units: 500, Valid loss: 0.2698, acc: 0.918, error: 0.082
 # Hidden units: 1000, Valid loss: 0.2605 acc: 0.924, error: 0.076 <- best found!
@@ -94,12 +95,12 @@ for num_hidden_unit in num_hidden_units:
 
 	''' build the model '''
 	with tf.variable_scope("weights1" + str(num_hidden_unit)):
-		z1 = get_layer(X, image_dim, num_hidden_unit)
+		z1, W1= get_layer(X, image_dim, num_hidden_unit)
 		#print ("z1 shape: {}".format(z1.shape))
 		h1 = tf.nn.relu(z1)
 
 	with tf.variable_scope("weights2" + str(num_hidden_unit)):
-		z_out = get_layer(h1, num_hidden_unit, num_classifications)
+		z_out, W2 = get_layer(h1, num_hidden_unit, num_classifications)
 		#print ("z_out shape: {}".format(z_out.shape))
 
 	''' output '''
@@ -112,13 +113,8 @@ for num_hidden_unit in num_hidden_units:
 
 	''' cost definition '''
 	lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-	# W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
-	# W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
-	# print ("w1 shape: {}".format(W1.shape))
-	# print ("w2 shape: {}".format(W2.shape))
-	# lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
-	# lW *= weight_decay / 2
-	cost = lD
+	lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2)) * weight_decay / 2
+	cost = lD + lW
 	report_cost = lD
 
 	''' checkpoint '''
@@ -175,8 +171,7 @@ for num_hidden_unit in num_hidden_units:
 			valid_losses.append(valid_loss)
 			test_losses.append(test_loss)
 
-			print("Epoch: {}".format(epoch))
-			print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
+			print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 			epoch += 1
 
 	print ("Num hidden units: {}".format(num_hidden_unit))
@@ -236,7 +231,7 @@ for num_hidden_unit in num_hidden_units:
 	plt.savefig("2_1_" + str(num_hidden_unit) + "_error.png")
 
 
-
+	plt.show()
 
 
 

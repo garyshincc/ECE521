@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -37,16 +37,21 @@ def get_data():
 # vectorized layer
 def get_layer(input_tensor, num_input, num_output):
 	weight_initializer = tf.contrib.layers.xavier_initializer()
-	W = tf.get_variable(
+	xavier_variance = 3.0 / float ( num_input + num_output )
+	W = tf.Variable(
+			tf.truncated_normal(
+				shape=(num_input, num_output),
+				mean=0.0,
+				stddev= tf.sqrt(xavier_variance),
+				),
 			name="weights",
-			shape=(num_input, num_output),
 			dtype=tf.float32,
-			initializer=weight_initializer,
+			#initializer=weight_initializer,
 			#regularizer=tf.contrib.layers.l2_regularizer(scale=3e-4)
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
-	return z
+	return z, W
 
 def gary_round(num, num2):
 	return int(num * num2) / float(num2)
@@ -62,7 +67,7 @@ image_dim = 28 * 28 # 784
 bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
-training_steps = 600
+training_steps = 3000
 batch_size = 500
 
 
@@ -77,12 +82,12 @@ Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
 
 ''' build the model '''
 with tf.variable_scope("weights1"):
-	z1 = get_layer(X, image_dim, num_hidden_units)
+	z1, W1 = get_layer(X, image_dim, num_hidden_units)
 	#print ("z1 shape: {}".format(z1.shape))
 	h1 = tf.nn.relu(z1)
 
 with tf.variable_scope("weights2"):
-	z_out = get_layer(h1, num_hidden_units, num_classifications)
+	z_out, W2 = get_layer(h1, num_hidden_units, num_classifications)
 	#print ("z_out shape: {}".format(z_out.shape))
 
 ''' output '''
@@ -94,8 +99,9 @@ accuracy = tf.cast(correct, tf.float64) / tf.cast(tf.shape(prediction)[0], tf.fl
 classification_error = 1.0 - accuracy
 
 ''' cost definition '''
-lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-cost = lD
+lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=z_out))
+lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2)) * weight_decay / 2
+cost = lD + lW
 cost_report = lD
 
 ''' checkpoint '''
@@ -105,6 +111,7 @@ weight_saver = tf.train.Saver()
 train_accs = list()
 valid_accs = list()
 test_accs = list()
+
 train_errors = list()
 valid_errors = list()
 test_errors = list()
@@ -130,6 +137,8 @@ init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
 
+''' early stop '''
+min_valid_error = 10e120#1 + sess.run(cost_report, feed_dict = {X: validData, Y: validTarget})
 epoch = 0
 for step in range(training_steps):
 	batch_num = (step % num_batches) * batch_size
@@ -157,12 +166,25 @@ for step in range(training_steps):
 		valid_losses.append(valid_loss)
 		test_losses.append(test_loss)
 
-		print("Epoch: {}".format(epoch))
-		print("Training loss: {}, accuracy: {}".format(gary_round(train_loss,1000), gary_round(train_acc,1000)))
+		
+		if (min_valid_error * 1.1 < valid_error):
+			print ("@" * 80)
+			break;
+		min_valid_error = min(min_valid_error, valid_error)
+
+		print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 		epoch += 1
 
 train_acc, train_loss = sess.run([accuracy, cost_report], feed_dict = {X: trainData, Y: trainTarget})
-print ("Learning rate: {}, train loss: {}, acc: {}".format(learning_rate, train_loss, train_acc))
+print ("Train loss: {}, acc: {}".format(train_loss, train_acc))
+
+
+valid_acc, valid_loss = sess.run([accuracy, cost_report], feed_dict = {X: validData, Y: validTarget})
+print ("Valid loss: {}, acc: {}".format(valid_loss, valid_acc))
+
+
+test_acc, test_loss = sess.run([accuracy, cost_report], feed_dict = {X: testData, Y: testTarget})
+print ("Test loss: {}, acc: {}".format(test_loss, test_acc))
 
 
 
@@ -214,8 +236,7 @@ blue_patch = mpatches.Patch(color='blue', label='Test Set')
 plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("1_3_error.png")
 
-#plt.show()
-
+plt.show()
 
 
 

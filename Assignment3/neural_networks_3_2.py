@@ -1,20 +1,10 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-'''
-Number of hidden units: Instead of using 1000 hidden units,
-train different neural net- works with [100, 500, 1000]
-hidden units. Find the best validation error for each one.
-Choose the model which gives you the best result, and then
-use it for classifying the test set. Report the test
-classification error. In one sentence, summarize your
-observation about the effect of the number of hidden units
-on the final results.
-'''
 # data
 def get_data():
 	with np.load("notMNIST.npz") as data:
@@ -55,8 +45,11 @@ def get_layer(input_tensor, num_input, num_output):
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
-	return z
+	return z, W
 
+
+def gary_round(num, num2):
+	return int(num * num2) / float(num2)
 
 trainData, trainTarget, validData, validTarget, testData, testTarget = get_data()
 
@@ -65,7 +58,6 @@ num_samples = trainData.shape[0]
 ''' hyper parameters ''' 
 learning_rate = 0.005 # 0.01
 image_dim = 28 * 28 # 784
-bias_init = 0
 num_classifications = 10
 weight_decay = 3e-4
 training_steps = 1500
@@ -87,13 +79,15 @@ Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
 
 ''' build the model '''
 with tf.variable_scope("weights1" + str(num_hidden_unit)):
-	z1 = get_layer(X, image_dim, num_hidden_unit)
+	h1_drop = tf.nn.dropout(X, keep_prob)
+	z1, W1 = get_layer(h1_drop, image_dim, num_hidden_unit)
 	#print ("z1 shape: {}".format(z1.shape))
+
 	h1 = tf.nn.relu(z1)
-	h1_drop = tf.nn.dropout(h1, keep_prob)
+	
 
 with tf.variable_scope("weights2" + str(num_hidden_unit)):
-	z_out = get_layer(h1_drop, num_hidden_unit, num_classifications)
+	z_out, W2 = get_layer(h1, num_hidden_unit, num_classifications)
 	#print ("z_out shape: {}".format(z_out.shape))
 
 ''' output '''
@@ -106,13 +100,7 @@ classification_error = 1.0 - accuracy
 
 ''' cost definition '''
 lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out))
-#lD_no_drop = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out_no_drop))
-W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
-W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
-print ("w1 shape: {}".format(W1.shape))
-print ("w2 shape: {}".format(W2.shape))
-lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
-lW *= weight_decay / 2
+lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2)) * weight_decay / 2
 cost = lD + lW
 report_cost = lD
 
@@ -143,8 +131,6 @@ sess.run(init)
 
 epoch = 0
 checkpoint1 = int(training_steps / 4.0)
-checkpoint2 = int(2 * training_steps / 4.0)
-checkpoint3 = int(3 * training_steps / 4.0)
 num_neurons = 100
 weight_dim = (28, 28)
 
@@ -175,11 +161,10 @@ for step in range(training_steps):
 		valid_losses.append(valid_loss)
 		test_losses.append(test_loss)
 
-		print("Epoch: {}".format(epoch))
-		#print("Training loss: {}, accuracy: {}".format(train_loss, train_acc))
-		#print(sess.run(h1, feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value}))
+		print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 		epoch += 1
 
+	keep_prob_value = 1.0
 	if step == checkpoint1:
 		print ("25 % REACHED")
 		fig, axs = plt.subplots(10,10, figsize=(28, 28), facecolor='w', edgecolor='k')
@@ -191,7 +176,7 @@ for step in range(training_steps):
 			axs[layer_num].imshow(w_vis, cmap="gray")
 
 		plt.tight_layout()
-		plt.savefig("3_2_25.png")
+		plt.savefig("3_2_25_" + ("drop" if keep_prob_value == 0.5 else "nodrop") + ".png")
 
 	if step == training_steps - 1:
 		print ("100 % REACHED")
@@ -204,17 +189,17 @@ for step in range(training_steps):
 			axs[layer_num].imshow(w_vis, cmap="gray")
 
 		plt.tight_layout()
-		plt.savefig("3_2_100.png")
+		plt.savefig("3_2_100_" + ("drop" if keep_prob_value == 0.5 else "nodrop") + ".png")
 
 
 # redefine accuracy for the no dropout case, 
-keep_prob_value = 1.0
+# keep_prob_value = 1.0
 
-print ("Num hidden units: {}".format(num_hidden_unit))
-valid_acc, valid_loss, valid_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: validData, Y: validTarget, keep_prob: keep_prob_value})
-print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))
+# print ("Num hidden units: {}".format(num_hidden_unit))
+# valid_acc, valid_loss, valid_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: validData, Y: validTarget, keep_prob: keep_prob_value})
+# print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))
 
-test_acc, test_loss, test_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: testData, Y: testTarget, keep_prob: keep_prob_value})
-print ("Test loss: {}, acc: {}, error: {}".format(test_loss, test_acc, test_error))
+# test_acc, test_loss, test_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: testData, Y: testTarget, keep_prob: keep_prob_value})
+# print ("Test loss: {}, acc: {}, error: {}".format(test_loss, test_acc, test_error))
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -96,8 +96,8 @@ classification_error = 1.0 - accuracy
 
 ''' cost definition '''
 lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=z_out))
-#W1 = tf.get_default_graph().get_tensor_by_name("weights1/weights:0")
-#W2 = tf.get_default_graph().get_tensor_by_name("weights2/weights:0")
+# W1 = tf.get_default_graph().get_tensor_by_name("weights1/weights:0")
+# W2 = tf.get_default_graph().get_tensor_by_name("weights2/weights:0")
 lW = (tf.reduce_sum(W1 * W1) + tf.reduce_sum(W2 * W2)) * weight_decay / 2
 cost = lD + lW
 cost_report = lD
@@ -160,8 +160,8 @@ for step in range(training_steps):
 		valid_losses.append(valid_loss)
 		test_losses.append(test_loss)
 
-		#print("Epoch: {}".format(epoch))
-		print("Training loss: {}, accuracy: {}".format(gary_round(train_loss,1000), gary_round(train_acc,1000)))
+		#print("".format(epoch))
+		print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 		#print (sess.run(W1))
 		epoch += 1
 
@@ -218,7 +218,7 @@ blue_patch = mpatches.Patch(color='blue', label='Test Set')
 plt.legend(handles=[red_patch, cyan_patch, blue_patch], loc=0)
 plt.savefig("1_2_error.png")
 
-#plt.show()
+plt.show()
 
 
 
