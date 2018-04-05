@@ -160,6 +160,7 @@ for step in range(training_steps):
 		valid_losses.append(valid_loss)
 		test_losses.append(test_loss)
 
+
 		#print("".format(epoch))
 		print("Epoch: {}, Train loss: {}, acc: {}".format(epoch, gary_round(train_loss,1000), gary_round(train_acc,1000)))
 		#print (sess.run(W1))
@@ -167,6 +168,12 @@ for step in range(training_steps):
 
 train_acc, train_loss = sess.run([accuracy, cost_report], feed_dict = {X: trainData, Y: trainTarget})
 print ("Learning rate: {}, train loss: {}, acc: {}".format(learning_rate, train_loss, train_acc))
+
+valid_acc, valid_loss = sess.run([accuracy, cost_report], feed_dict = {X: validData, Y: validTarget})
+print ("Valid loss: {}, acc: {}".format(valid_loss, valid_acc))
+
+test_acc, test_loss = sess.run([accuracy, cost_report], feed_dict = {X: testData, Y: testTarget})
+print ("Test loss: {}, acc: {}".format(test_loss, test_acc))
 
 
 

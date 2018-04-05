@@ -57,7 +57,7 @@ def get_layer(input_tensor, num_input, num_output, weight_decay=3e-4):
 	)
 	b = tf.Variable(tf.zeros(shape=(num_output)), name="bias")
 	z = tf.add(tf.matmul(input_tensor, W), b)
-	return z
+	return z, W
 
 def gary_round(num, num2):
 	return int(num * num2) / float(num2)
@@ -108,23 +108,26 @@ Y = tf.placeholder(tf.float32, shape=(None, num_classifications), name="output")
 
 
 ''' build the model '''
-with tf.variable_scope("weights1" + str(num_hidden_unit)):
-	z1 = get_layer(X, image_dim, num_hidden_unit, weight_decay)
-	#print ("z1 shape: {}".format(z1.shape))
+with tf.variable_scope("weights1"):
+	z1, W1 = get_layer(X, image_dim, num_hidden_unit, weight_decay)
 	h1 = tf.nn.relu(z1)
 	h1_drop = tf.nn.dropout(h1, keep_prob)
 
-with tf.variable_scope("weights2" + str(num_hidden_unit)):
-	z_out = get_layer(h1_drop, num_hidden_unit, num_classifications, weight_decay)
-	#print ("z_out shape: {}".format(z_out.shape))
+second_layer = int(np.random.uniform(100, 501))
+with tf.variable_scope("weights2"):
+	z2, W2 = get_layer(h1_drop, num_hidden_unit, second_layer, weight_decay)
+	h2 = tf.nn.relu(z2)
+	h2_drop = tf.nn.dropout(h2, keep_prob)
 
 
+third_layer = int(np.random.uniform(100, 501))
+with tf.variable_scope("weights3"):
+	z3, W3 = get_layer(h2_drop, second_layer, third_layer, weight_decay)
+	h3 = tf.nn.relu(z3)
+	h3_drop = tf.nn.dropout(h3, keep_prob)
 
-
-
-
-
-
+with tf.variable_scope("weights4"):
+	z_out, W4 = get_layer(h3_drop, third_layer, num_classifications, weight_decay)
 
 
 ''' output '''
@@ -137,13 +140,12 @@ classification_error = 1.0 - accuracy
 
 ''' cost definition '''
 lD = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=z_out))
-#lD_no_drop = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.cast(Y, tf.int32), logits=z_out_no_drop))
-W1 = tf.get_default_graph().get_tensor_by_name("weights1" + str(num_hidden_unit) + "/weights:0")
-W2 = tf.get_default_graph().get_tensor_by_name("weights2" + str(num_hidden_unit) + "/weights:0")
-print ("w1 shape: {}".format(W1.shape))
-print ("w2 shape: {}".format(W2.shape))
-lW = tf.reduce_sum(tf.square(W1)) + tf.reduce_sum(tf.square(W2))
-lW *= weight_decay / 2
+lW = (
+	tf.reduce_sum(W1 * W1)\
+	+ tf.reduce_sum(W2 * W2)\
+	+ tf.reduce_sum(W3 * W3)\
+	+ tf.reduce_sum(W4 * W4)\
+	) * weight_decay / 2
 cost = lD + lW
 report_cost = lD
 
@@ -188,7 +190,6 @@ for step in range(training_steps):
 	sess.run(train, feed_dict = {X: dataBatchi, Y: targetBatchi, keep_prob: keep_prob_train})
 
 	if batch_num == 0:
-		keep_prob_value = 1.0
 		train_acc, train_loss, train_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value})
 		valid_acc, valid_loss, valid_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: validData, Y: validTarget, keep_prob: keep_prob_value})
 		test_acc, test_loss, test_error = sess.run([accuracy, cost, classification_error], feed_dict = {X: testData, Y: testTarget, keep_prob: keep_prob_value})
@@ -209,23 +210,6 @@ for step in range(training_steps):
 		#print(sess.run(h1, feed_dict = {X: trainData, Y: trainTarget, keep_prob: keep_prob_value}))
 		epoch += 1
 
-# redefine accuracy for the no dropout case, 
-keep_prob_value = 1.0
-
-
-
-learning_rate
-
-num_hidden_layers
-
-num_hidden_unit
-
-weight_decay
-
-keep_prob_value
-
-training_steps = 3000
-batch_size = 500
 
 print ("learning rate: {}, weight_decay: {}, num_hidden_units: {}, keep_prob: {}".format(
 	learning_rate,
@@ -233,6 +217,8 @@ print ("learning rate: {}, weight_decay: {}, num_hidden_units: {}, keep_prob: {}
 	num_hidden_unit,
 	keep_prob_value
 	))
+print ("second_layer: {}".format(second_layer))
+print ("third_layer: {}".format(third_layer))
 
 valid_acc, valid_loss, valid_error = sess.run([accuracy, report_cost, classification_error], feed_dict = {X: validData, Y: validTarget, keep_prob: keep_prob_value})
 print ("Valid loss: {}, acc: {}, error: {}".format(valid_loss, valid_acc, valid_error))
